@@ -80,8 +80,8 @@
 		<div class="control-row">
 			<label for="mode-select" data-fr="Vue:" data-en="View:">Vue:</label>
 			<select id="mode-select">
-				<option value="paris" selected>Paris</option>
-				<option value="quartiers" data-fr="Quartiers de Paris" data-en="Paris Districts">Quartiers de Paris</option>
+				<option value="paris">Paris</option>
+				<option value="quartiers" selected data-fr="Quartiers de Paris" data-en="Paris Districts">Quartiers de Paris</option>
 				<option value="france" data-fr="France" data-en="France">France</option>
 			</select>
 		</div>
@@ -115,7 +115,10 @@
 	<div id="ai-chat-container">
 		<div id="ai-chat-header">
 			<span data-fr="🤖 Assistant IA Immobilier" data-en="🤖 Real Estate AI Assistant">🤖 Assistant IA Immobilier</span>
-			<button id="ai-toggle">💬</button>
+			<div class="ai-header-buttons">
+				<button id="ai-minimize" class="ai-btn" title="Réduire" data-fr-title="Réduire" data-en-title="Minimize">−</button>
+				<button id="ai-close" class="ai-btn" title="Fermer" data-fr-title="Fermer" data-en-title="Close">×</button>
+			</div>
 		</div>
 		<div id="ai-chat-content">
 			<div id="ai-chat-messages"></div>
@@ -124,6 +127,13 @@
 				<button id="ai-send-btn" data-fr="Envoyer" data-en="Send">Envoyer</button>
 			</div>
 		</div>
+	</div>
+	
+	<!-- Bouton pour réouvrir le chat quand il est fermé -->
+	<div id="ai-chat-toggle" style="display: none;">
+		<button id="ai-reopen" title="Ouvrir l'assistant IA" data-fr-title="Ouvrir l'assistant IA" data-en-title="Open AI Assistant">
+			🤖
+		</button>
 	</div>
 	
 	<div id="map"></div>

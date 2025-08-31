@@ -338,19 +338,84 @@ html, body {
 	font-size: 14px;
 }
 
-#ai-toggle {
-	background: rgba(255, 255, 255, 0.2);
-	border: none;
-	border-radius: 6px;
-	padding: 6px 10px;
-	color: white;
-	cursor: pointer;
-	font-size: 16px;
-	transition: all 0.2s;
+.ai-header-buttons {
+	display: flex;
+	gap: 4px;
 }
 
-#ai-toggle:hover {
+.ai-btn {
+	background: rgba(255, 255, 255, 0.2);
+	border: none;
+	border-radius: 4px;
+	padding: 4px 8px;
+	color: white;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: bold;
+	transition: all 0.2s;
+	min-width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.ai-btn:hover {
 	background: rgba(255, 255, 255, 0.3);
+	transform: scale(1.1);
+}
+
+#ai-minimize {
+	font-size: 16px;
+	line-height: 1;
+}
+
+#ai-close {
+	font-size: 18px;
+	line-height: 1;
+}
+
+/* Bouton pour réouvrir le chat */
+#ai-chat-toggle {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	z-index: 1000;
+}
+
+#ai-reopen {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border: none;
+	border-radius: 50%;
+	width: 60px;
+	height: 60px;
+	color: white;
+	cursor: pointer;
+	font-size: 24px;
+	box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+	transition: all 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+#ai-reopen:hover {
+	transform: scale(1.1);
+	box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+/* États du chatbot */
+#ai-chat-container.minimized #ai-chat-content {
+	display: none;
+}
+
+#ai-chat-container.minimized {
+	height: auto;
+	max-height: none;
+}
+
+#ai-chat-container.closed {
+	display: none;
 }
 
 #ai-chat-content {

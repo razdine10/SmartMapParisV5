@@ -518,63 +518,95 @@ function initLanguageSelector() {
 function initAI() {
 	const container = document.getElementById('ai-chat-container');
 	const content = document.getElementById('ai-chat-content');
-	const toggle = document.getElementById('ai-toggle');
+	const minimizeBtn = document.getElementById('ai-minimize');
+	const closeBtn = document.getElementById('ai-close');
+	const reopenBtn = document.getElementById('ai-reopen');
+	const toggleDiv = document.getElementById('ai-chat-toggle');
 	const input = document.getElementById('ai-chat-input');
 	const sendBtn = document.getElementById('ai-send-btn');
 	const messages = document.getElementById('ai-chat-messages');
 
-
-	content.style.display = 'none';
+	// État initial : Chat ouvert par défaut
+	chatExpanded = true;
+	content.style.display = 'flex';
 	
-
-	toggle.addEventListener('click', () => {
+	// Bouton réduire
+	minimizeBtn.addEventListener('click', () => {
 		chatExpanded = !chatExpanded;
-		content.style.display = chatExpanded ? 'flex' : 'none';
-		toggle.textContent = chatExpanded ? '✕' : '💬';
-		
-		if (chatExpanded && messages.children.length === 0) {
-			const welcomeMsg = currentLanguage === 'fr' ? 
-				'👋 Bonjour ! Je suis votre assistant IA spécialisé dans l\'immobilier français. Posez-moi des questions sur les données DVF !' :
-				'👋 Hello! I am your AI assistant specialized in French real estate. Ask me questions about DVF data!';
-			
-			const examplesMsg = currentLanguage === 'fr' ? '💡 Exemples de questions:' : '💡 Example questions:';
-			
-			addMessage('assistant', welcomeMsg);
-			addMessage('assistant', examplesMsg);
-			
-			const suggestionsDiv = document.createElement('div');
-			suggestionsDiv.style.cssText = 'margin: 8px 0; display: flex; flex-direction: column; gap: 4px;';
-			
-			const suggestions = currentLanguage === 'fr' ? [
-				"Quel arrondissement parisien a le plus progressé depuis 2020 ?",
-				"Comment a évolué l'immobilier en France depuis 2021 ?",
-				"Où investir dans Paris en 2024 ?",
-				"🔮 Prédictions prix immobilier 2025 Paris",
-				"🔮 Quels seront les prix en France en 2025 ?",
-				"🔮 Arrondissements les plus chers en 2025"
-			] : [
-				"Which Paris district has progressed the most since 2020?",
-				"How has real estate evolved in France since 2021?",
-				"Where to invest in Paris in 2024?",
-				"🔮 Real estate price predictions 2025 Paris",
-				"🔮 What will prices be in France in 2025?",
-				"🔮 Most expensive districts in 2025"
-			];
-			
-			suggestions.forEach(suggestion => {
-				const btn = document.createElement('button');
-				btn.textContent = suggestion;
-				btn.style.cssText = 'padding: 6px 10px; margin: 2px 0; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; text-align: left;';
-				btn.onclick = () => {
-					document.getElementById('ai-chat-input').value = suggestion;
-					document.getElementById('ai-send-btn').click();
-				};
-				suggestionsDiv.appendChild(btn);
-			});
-			
-			messages.appendChild(suggestionsDiv);
+		if (chatExpanded) {
+			container.classList.remove('minimized');
+			content.style.display = 'flex';
+		} else {
+			container.classList.add('minimized');
+			content.style.display = 'none';
 		}
 	});
+	
+	// Bouton fermer
+	closeBtn.addEventListener('click', () => {
+		container.classList.add('closed');
+		toggleDiv.style.display = 'block';
+	});
+	
+	// Bouton réouvrir
+	reopenBtn.addEventListener('click', () => {
+		container.classList.remove('closed', 'minimized');
+		toggleDiv.style.display = 'none';
+		content.style.display = 'flex';
+		chatExpanded = true;
+		
+		// Charger les messages de bienvenue si c'est la première fois
+		if (messages.children.length === 0) {
+			loadWelcomeMessages();
+		}
+	});
+	
+	// Charger les messages de bienvenue au démarrage
+	function loadWelcomeMessages() {
+		const welcomeMsg = currentLanguage === 'fr' ? 
+			'👋 Bonjour ! Je suis votre assistant IA spécialisé dans l\'immobilier français. Posez-moi des questions sur les données DVF !' :
+			'👋 Hello! I am your AI assistant specialized in French real estate. Ask me questions about DVF data!';
+		
+		const examplesMsg = currentLanguage === 'fr' ? '💡 Exemples de questions:' : '💡 Example questions:';
+		
+		addMessage('assistant', welcomeMsg);
+		addMessage('assistant', examplesMsg);
+		
+		const suggestionsDiv = document.createElement('div');
+		suggestionsDiv.style.cssText = 'margin: 8px 0; display: flex; flex-direction: column; gap: 4px;';
+		
+		const suggestions = currentLanguage === 'fr' ? [
+			"Quel arrondissement parisien a le plus progressé depuis 2020 ?",
+			"Comment a évolué l'immobilier en France depuis 2021 ?",
+			"Où investir dans Paris en 2024 ?",
+			"🔮 Prédictions prix immobilier 2025 Paris",
+			"🔮 Quels seront les prix en France en 2025 ?",
+			"🔮 Arrondissements les plus chers en 2025"
+		] : [
+			"Which Paris district has progressed the most since 2020?",
+			"How has real estate evolved in France since 2021?",
+			"Where to invest in Paris in 2024?",
+			"🔮 Real estate price predictions 2025 Paris",
+			"🔮 What will prices be in France in 2025?",
+			"🔮 Most expensive districts in 2025"
+		];
+		
+		suggestions.forEach(suggestion => {
+			const btn = document.createElement('button');
+			btn.textContent = suggestion;
+			btn.style.cssText = 'padding: 6px 10px; margin: 2px 0; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; text-align: left;';
+			btn.onclick = () => {
+				document.getElementById('ai-chat-input').value = suggestion;
+				document.getElementById('ai-send-btn').click();
+			};
+			suggestionsDiv.appendChild(btn);
+		});
+		
+		messages.appendChild(suggestionsDiv);
+	}
+	
+	// Charger les messages au démarrage
+	loadWelcomeMessages();
 
 
 	function sendMessage() {
