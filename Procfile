@@ -1,1 +1,1 @@
-web: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn smartmap.wsgi 
+web: python manage.py migrate --noinput && python manage.py populate_quartiers && python manage.py import_all_france_departments && python manage.py collectstatic --noinput && gunicorn smartmap.wsgi 
