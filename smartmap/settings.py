@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-change-me'
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,*.railway.app,*.up.railway.app').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app,.up.railway.app').split(',')
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -66,3 +66,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 MAPBOX_TOKEN = os.getenv('MAPBOX_TOKEN', 'pk.eyJ1IjoicmF6ZGluZS0xMCIsImEiOiJjbWV5aWxiMmswbmVjMmtzYW1oNjZoem9jIn0.C9Om2RxfBLZ140mAIpOygA')
+
+# Trust Railway domains for CSRF in production
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'https://*.railway.app,https://*.up.railway.app').split(',')

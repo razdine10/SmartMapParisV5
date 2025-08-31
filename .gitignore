@@ -12,7 +12,9 @@ ENV/
 # Django
 db.sqlite3
 db.sqlite3-journal
-/static/
+# keep static tracked for build assets
+# (staticfiles/ remains the collectstatic target)
+# /static/
 /media/
 /staticfiles/
 
