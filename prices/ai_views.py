@@ -13,7 +13,8 @@ from .predictions import generate_prediction_insights
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
 # Allow selecting the model via env var; default to a very small model to fit free-tier storage
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'tinyllama:latest')
-ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
+# Remove the global client - create it dynamically
+# ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
 
 
 def get_data_context():
@@ -126,13 +127,18 @@ USER QUESTION: {question}"""
 
     # Call to Ollama (local or remote). If unreachable, raise explicit error.
     try:
-        response = ollama_client.chat(model=OLLAMA_MODEL, messages=[
+        # Create client dynamically to pick up current environment variables
+        current_base_url = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
+        current_model = os.getenv('OLLAMA_MODEL', 'tinyllama:latest')
+        ollama_client = ollama.Client(host=current_base_url)
+        response = ollama_client.chat(model=current_model, messages=[
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': question}
         ])
         return response['message']['content']
     except Exception as e:
-        raise ConnectionError(f"Ollama not reachable at {OLLAMA_BASE_URL}: {e}")
+        current_base_url = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
+        raise ConnectionError(f"Ollama not reachable at {current_base_url}: {e}")
 
 
 @csrf_exempt
