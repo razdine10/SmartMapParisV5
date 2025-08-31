@@ -1,1 +1,1 @@
-web: python manage.py migrate --noinput && echo "Loading fixture..." && python manage.py loaddata prices/fixtures/seed.json && echo "Fixture loaded successfully" && python manage.py collectstatic --noinput && gunicorn smartmap.wsgi 
+web: python manage.py migrate --noinput && echo "Loading fixture..." && python manage.py loaddata prices/fixtures/seed.json || echo "Loaddata failed, continuing anyway" && echo "Fixture loading complete" && python manage.py collectstatic --noinput && gunicorn smartmap.wsgi 
