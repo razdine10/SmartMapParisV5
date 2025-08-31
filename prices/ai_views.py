@@ -11,6 +11,8 @@ from .predictions import generate_prediction_insights
 
 # Configure Ollama base URL (works locally and in production if a remote Ollama is provided)
 OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
+# Allow selecting the model via env var; default to a very small model to fit free-tier storage
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'tinyllama:latest')
 ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
 
 
@@ -124,7 +126,7 @@ USER QUESTION: {question}"""
 
     # Call to Ollama (local or remote). If unreachable, raise explicit error.
     try:
-        response = ollama_client.chat(model='llama3.2', messages=[
+        response = ollama_client.chat(model=OLLAMA_MODEL, messages=[
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': question}
         ])
