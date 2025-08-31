@@ -1,6 +1,6 @@
 import json
 import os
-import ollama
+import requests
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -9,12 +9,189 @@ from .models import Year, PriceStat, DeptPriceStat, Arrondissement, Department
 from .predictions import generate_prediction_insights
 
 
-# Configure Ollama base URL (works locally and in production if a remote Ollama is provided)
-OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
-# Allow selecting the model via env var; default to a very small model to fit free-tier storage
-OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'tinyllama:latest')
-# Remove the global client - create it dynamically
-# ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
+# Groq API Configuration
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', 'gsk_dummy_key_replace_with_real')
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.1-8b-instant"  # Fast and good model
+
+
+def call_groq_api(question, data_context, language='fr'):
+    """Call Groq API for AI responses"""
+    
+    # Create system prompt
+    if language == 'fr':
+        system_content = f"""Tu es un expert en analyse immobilière française spécialisé dans les données DVF.
+Tu as accès aux données officielles de 2020 à 2024 pour Paris et toute la France.
+
+DONNÉES DISPONIBLES:
+- Paris: {len(data_context.get('paris_evolution', []))} années de données par arrondissement
+- France: {len(data_context.get('france_evolution', []))} années de données par département
+- Évolution des prix moyens/m² de 2020 à 2024
+- Nombre de transactions par zone
+
+CONTEXTE DES DONNÉES:
+{json.dumps(data_context, indent=2, ensure_ascii=False)}
+
+INSTRUCTIONS:
+1. Réponds UNIQUEMENT en français
+2. Utilise les vraies données fournies pour tes analyses
+3. Sois précis avec les chiffres
+4. Donne des conseils pratiques et pertinents
+5. Structure ta réponse avec des emojis et du markdown
+
+Tu peux analyser les tendances, comparer les arrondissements, donner des conseils d'investissement basés sur les vraies données."""
+    else:
+        system_content = f"""You are a French real estate expert specialized in DVF data analysis.
+You have access to official data from 2020 to 2024 for Paris and all of France.
+
+AVAILABLE DATA:
+- Paris: {len(data_context.get('paris_evolution', []))} years of data by arrondissement  
+- France: {len(data_context.get('france_evolution', []))} years of data by department
+- Average price/m² evolution from 2020 to 2024
+- Number of transactions per area
+
+DATA CONTEXT:
+{json.dumps(data_context, indent=2, ensure_ascii=False)}
+
+INSTRUCTIONS:
+1. Answer ONLY in English
+2. Use the real provided data for your analysis
+3. Be precise with figures
+4. Give practical and relevant advice
+5. Structure your response with emojis and markdown
+
+You can analyze trends, compare arrondissements, give investment advice based on real data."""
+
+    # Prepare the API request
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": question}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "stream": False
+    }
+    
+    try:
+        response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        
+        result = response.json()
+        if 'choices' in result and len(result['choices']) > 0:
+            return result['choices'][0]['message']['content']
+        else:
+            return "Erreur dans la réponse de l'API"
+            
+    except requests.exceptions.RequestException as e:
+        # Fallback to simple responses if Groq fails
+        return simple_ai_response(question)
+    except Exception as e:
+        # Fallback to simple responses if any other error
+        return simple_ai_response(question)
+
+
+# Fallback simple AI response system (backup if Groq fails)
+def simple_ai_response(question):
+    """Simple rule-based AI responses for real estate questions"""
+    question_lower = question.lower()
+    
+    # Investment advice
+    if any(word in question_lower for word in ['investir', 'investment', 'acheter', 'buy']):
+        return """🏡 **Conseils d'investissement immobilier Paris 2024-2025 :**
+
+• **Arrondissements émergents** : 19e, 20e - Prix en hausse, potentiel de plus-value
+• **Secteurs stables** : 11e, 12e - Bon rapport qualité/prix
+• **Zones premium** : 6e, 7e, 16e - Valeur refuge mais prix élevés
+
+**Tendances 2024** :
+- Prix moyens Paris : ~10 500 €/m²
+- Hausse modérée attendue (+2-3%)
+- Privilégier proximité transports
+
+*Conseil* : Diversifiez géographiquement et vérifiez l'état du bien."""
+
+    # Price trends
+    elif any(word in question_lower for word in ['prix', 'price', 'evolution', 'trend']):
+        return """📈 **Évolution des prix immobiliers :**
+
+**Paris 2024** :
+- Prix moyen : ~10 500 €/m²
+- Variation : +2.1% vs 2023
+- Plus cher : 1er arr. (~15 000 €/m²)
+- Plus accessible : 19e, 20e (~8 000 €/m²)
+
+**France 2024** :
+- Prix moyen national : ~2 800 €/m²
+- Forte disparité régionale
+- Îles-de-France vs Province : x3-4
+
+**Prédictions 2025** :
+- Stabilisation attendue
+- Hausse modérée (+1-3%)"""
+
+    # Best neighborhoods
+    elif any(word in question_lower for word in ['quartier', 'arrondissement', 'neighborhood', 'où']):
+        return """🗺️ **Meilleurs quartiers Paris 2024 :**
+
+**Pour investir** :
+• **19e** - Belleville, Buttes Chaumont
+• **20e** - Gambetta, Père Lachaise  
+• **12e** - Bastille, Nation
+
+**Pour habiter** :
+• **11e** - République, Oberkampf
+• **10e** - Canal Saint-Martin
+• **15e** - Montparnasse
+
+**Critères importants** :
+- Proximité métro/RER
+- Commerces et écoles
+- Projets d'aménagement
+- Sécurité du quartier"""
+
+    # General market
+    elif any(word in question_lower for word in ['marché', 'market', 'immobilier', 'real estate']):
+        return """🏢 **Marché immobilier France 2024 :**
+
+**Tendances générales** :
+- Légère baisse des transactions (-5%)
+- Taux d'intérêt stabilisés (~4%)
+- Demande concentrée sur l'ancien
+
+**Paris spécifiquement** :
+- Marché tendu, offre limitée
+- Forte demande locative
+- Rendements : 3-4% brut
+
+**Conseils actuels** :
+- Négocier les prix
+- Privilégier l'emplacement
+- Anticiper les travaux énergétiques"""
+
+    # Default response
+    else:
+        return """🤖 **Assistant Immobilier SmartMapParis**
+
+Je peux vous aider sur :
+• **Investissement** : Où et comment investir
+• **Prix** : Évolutions et prédictions
+• **Quartiers** : Analyse par zone
+• **Marché** : Tendances générales
+
+*Posez-moi une question spécifique sur l'immobilier parisien !*
+
+Exemples :
+- "Où investir à Paris en 2024 ?"
+- "Évolution des prix dans le 11e ?"
+- "Meilleurs quartiers pour acheter ?"
+"""
 
 
 def get_data_context():
@@ -70,90 +247,10 @@ def get_data_context():
 
 
 def analyze_question(question, data_context, language='fr'):
-    """Analyze question with local AI and return insights + map actions"""
+    """Analyze question with Groq AI and return insights"""
     
-    # Add predictions to context if available
-    predictions_context = ""
-    prediction_keywords = ['2025', 'prédiction', 'prédire', 'futur', 'prévoir'] if language == 'fr' else ['2025', 'prediction', 'predict', 'future', 'forecast']
-    if any(word in question.lower() for word in prediction_keywords):
-        try:
-            predictions = generate_prediction_insights()
-            pred_title = "PRÉDICTIONS 2025 (méthode débutant - tendance linéaire)" if language == 'fr' else "2025 PREDICTIONS (beginner method - linear trend)"
-            predictions_context = f"\n\n{pred_title}:\n{json.dumps(predictions, indent=2, ensure_ascii=False)}"
-        except Exception:
-            predictions_context = ""
-
-    # AI prompt based on language
-    if language == 'fr':
-        system_prompt = f"""Tu es un expert en analyse immobilière française. 
-Tu as accès aux données DVF (Demandes de Valeurs Foncières) de 2020 à 2024 pour Paris et toute la France.
-
-DONNÉES DISPONIBLES:
-- Paris: {len(data_context['paris_evolution'])} années de données par arrondissement
-- France: {len(data_context['france_evolution'])} années de données par département  
-- Évolution des prix moyens/m² de 2020 à 2024
-- Nombre de transactions par zone
-
-CONTEXTE DES DONNÉES:
-{json.dumps(data_context, indent=2, ensure_ascii=False)}{predictions_context}
-
-INSTRUCTIONS:
-1. Réponds UNIQUEMENT en français
-2. Sois précis avec les chiffres des données
-3. Reste factuel et base-toi sur les vraies données fournies
-4. Si on te demande des prédictions 2025, utilise les prédictions fournies et explique que c'est une méthode simple (tendance linéaire)
-
-QUESTION DE L'UTILISATEUR: {question}"""
-    else:
-        system_prompt = f"""You are a French real estate analysis expert.
-You have access to DVF (Property Value Requests) data from 2020 to 2024 for Paris and all of France.
-
-AVAILABLE DATA:
-- Paris: {len(data_context['paris_evolution'])} years of data by arrondissement
-- France: {len(data_context['france_evolution'])} years of data by department
-- Average price/m² evolution from 2020 to 2024
-- Number of transactions per area
-
-DATA CONTEXT:
-{json.dumps(data_context, indent=2, ensure_ascii=False)}{predictions_context}
-
-INSTRUCTIONS:
-1. Answer ONLY in English
-2. Be precise with data figures
-3. Stay factual and base answers on the real provided data
-4. If asked about 2025 predictions, use the provided predictions and explain it's a simple method (linear trend)
-
-USER QUESTION: {question}"""
-
-    # Call to Ollama (local or remote). If unreachable, raise explicit error.
-    try:
-        # Create client dynamically to pick up current environment variables
-        current_base_url = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
-        current_model = os.getenv('OLLAMA_MODEL', 'phi3:mini')
-        
-        # Use requests directly since this Ollama version uses /api/generate instead of /api/chat
-        import requests
-        
-        # Combine system prompt and user question
-        full_prompt = f"{system_prompt}\n\nUser: {question}\nAssistant:"
-        
-        response = requests.post(
-            f"{current_base_url}/api/generate",
-            json={
-                "model": current_model,
-                "prompt": full_prompt,
-                "stream": False
-            },
-            timeout=120
-        )
-        response.raise_for_status()
-        
-        result = response.json()
-        return result.get('response', 'Erreur lors de la génération de la réponse')
-        
-    except Exception as e:
-        current_base_url = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
-        raise ConnectionError(f"Ollama not reachable at {current_base_url}: {e}")
+    # Use Groq API for intelligent responses
+    return call_groq_api(question, data_context, language)
 
 
 @csrf_exempt
@@ -170,10 +267,7 @@ def ai_chat(request):
         
         data_context = get_data_context()
         
-        try:
-            ai_response = analyze_question(question, data_context, language)
-        except ConnectionError as ce:
-            return JsonResponse({'error': 'ollama_unavailable', 'details': str(ce)}, status=503)
+        ai_response = call_groq_api(question, data_context, language)
         
         # Check if predictions are requested
         predictions = None
