@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>SmartMapParis – Prix immobiliers 3D</title>
+	<link href='https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css' rel='stylesheet'>
+	<link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+	<div id="welcome-screen">
+		<div class="welcome-container">
+			<div class="language-selector">
+				<button id="lang-fr" class="lang-btn active">🇫🇷 Français</button>
+				<button id="lang-en" class="lang-btn">🇬🇧 English</button>
+			</div>
+			<div class="welcome-header">
+				<div class="welcome-logo-title">
+					<img src="/static/images/logo.png" alt="Logo SmartMapParis" class="welcome-logo">
+					<h1 class="welcome-title">SmartMapParis 3D</h1>
+				</div>
+				<p class="welcome-subtitle" data-fr="Visualisation 3D des Prix Immobiliers" data-en="3D Real Estate Price Visualization">Visualisation 3D des Prix Immobiliers</p>
+			</div>
+			
+			<div class="welcome-content">
+				<div class="feature-grid">
+					<div class="feature-card">
+						<div class="feature-icon">🗺️</div>
+						<h3 data-fr="Carte 3D Interactive" data-en="Interactive 3D Map">Carte 3D Interactive</h3>
+						<p data-fr="Explorez les prix immobiliers en 3D interactif" data-en="Explore real estate prices in interactive 3D">Explorez les prix immobiliers en 3D interactif</p>
+					</div>
+					<div class="feature-card">
+						<div class="feature-icon">📊</div>
+						<h3 data-fr="Données DVF Officielles" data-en="Official DVF Data">Données DVF Officielles</h3>
+						<p data-fr="Données officielles 2020-2024" data-en="Official data 2020-2024">Données officielles 2020-2024</p>
+					</div>
+					<div class="feature-card">
+						<div class="feature-icon">🤖</div>
+						<h3 data-fr="Assistant IA" data-en="AI Assistant">Assistant IA</h3>
+						<p data-fr="Analyse et prédictions immobilières intelligentes" data-en="Intelligent real estate analysis and predictions">Analyse et prédictions immobilières intelligentes</p>
+					</div>
+					<div class="feature-card">
+						<div class="feature-icon">🎨</div>
+						<h3 data-fr="Thèmes Multiples" data-en="Multiple Themes">Thèmes Multiples</h3>
+						<p data-fr="Styles variés : clair, sombre, satellite, outdoor" data-en="Various styles: light, dark, satellite, outdoor">Styles variés : clair, sombre, satellite, outdoor</p>
+					</div>
+				</div>
+				
+				<div class="welcome-actions">
+					<button id="start-app" class="start-button" data-fr="🚀 Commencer l'Exploration" data-en="🚀 Start Exploration">
+						🚀 Commencer l'Exploration
+					</button>
+					<p class="welcome-note" data-fr="Découvrez les prix immobiliers de Paris et de France" data-en="Discover real estate prices in Paris and France">
+						Découvrez les prix immobiliers de Paris et de France
+					</p>
+				</div>
+			</div>
+			
+			<div class="welcome-footer">
+				<p class="copyright">© Said Razdine 2025</p>
+			</div>
+		</div>
+	</div>
+
+	<div id="controls">
+		<div id="info-panel">
+			<div class="app-header">
+				<img src="/static/images/logo.png" alt="Logo" class="app-logo">
+				<div>
+					<h3 class="app-title">SmartMapParis 3D</h3>
+					<p class="app-subtitle">Prix Immobilier</p>
+				</div>
+			</div>
+			<div id="current-info">
+				<strong id="current-mode">France</strong> • <strong id="current-year">---</strong>
+			</div>
+		</div>
+		<div class="control-row">
+			<label for="mode-select" data-fr="Vue:" data-en="View:">Vue:</label>
+			<select id="mode-select">
+				<option value="paris" selected>Paris</option>
+				<option value="quartiers" data-fr="Quartiers de Paris" data-en="Paris Districts">Quartiers de Paris</option>
+				<option value="france" data-fr="France" data-en="France">France</option>
+			</select>
+		</div>
+		<div class="control-row">
+			<label for="year-select" data-fr="Année:" data-en="Year:">Année:</label>
+			<select id="year-select"></select>
+		</div>
+		<div class="control-row">
+			<label for="theme-select" data-fr="Thème:" data-en="Theme:">Thème:</label>
+			<select id="theme-select">
+				<option value="mapbox://styles/mapbox/light-v11" selected data-fr="Clair" data-en="Light">Clair</option>
+				<option value="mapbox://styles/mapbox/dark-v11" data-fr="Sombre" data-en="Dark">Sombre</option>
+				<option value="mapbox://styles/mapbox/streets-v12" data-fr="Rues" data-en="Streets">Rues</option>
+				<option value="mapbox://styles/mapbox/satellite-v9" data-fr="Satellite" data-en="Satellite">Satellite</option>
+				<option value="mapbox://styles/mapbox/outdoors-v12" data-fr="Outdoor" data-en="Outdoor">Outdoor</option>
+			</select>
+		</div>
+		<div class="control-row">
+			<button id="reset-view" data-fr="🎯 Recentrer" data-en="🎯 Recenter">🎯 Recentrer</button>
+		</div>
+	</div>
+	<div id="legend">
+		<div id="legend-bar"></div>
+		<div id="legend-labels">
+			<span id="legend-min">min</span>
+			<span id="legend-max">max</span>
+		</div>
+	</div>
+	
+
+	<div id="ai-chat-container">
+		<div id="ai-chat-header">
+			<span data-fr="🤖 Assistant IA Immobilier" data-en="🤖 Real Estate AI Assistant">🤖 Assistant IA Immobilier</span>
+			<button id="ai-toggle">💬</button>
+		</div>
+		<div id="ai-chat-content">
+			<div id="ai-chat-messages"></div>
+			<div id="ai-chat-input-container">
+				<input type="text" id="ai-chat-input" placeholder="Posez votre question..." data-fr-placeholder="Posez votre question..." data-en-placeholder="Ask your question...">
+				<button id="ai-send-btn" data-fr="Envoyer" data-en="Send">Envoyer</button>
+			</div>
+		</div>
+	</div>
+	
+	<div id="map"></div>
+
+	<script src='https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js'></script>
+	<script>
+		const MAPBOX_TOKEN = "{{ MAPBOX_TOKEN }}";
+	</script>
+	<script src="/static/js/app.js"></script>
+</body>
+</html> 
