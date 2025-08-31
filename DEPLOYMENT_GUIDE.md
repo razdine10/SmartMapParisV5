@@ -18,7 +18,7 @@ Your project is ready for deployment! Follow these steps:
 After creating the repository, run these commands:
 
 ```bash
-git remote add origin https://github.com/[YOUR-USERNAME]/SmartMapParisV5.git
+git remote add origin https://github.com/razdine10/SmartMapParisV5.git
 git branch -M main
 git push -u origin main
 ```

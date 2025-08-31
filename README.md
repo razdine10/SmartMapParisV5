@@ -23,7 +23,7 @@ Professional interactive web application for visualizing real estate prices in P
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/[your-username]/SmartMapParisV5.git
+git clone https://github.com/razdine10/SmartMapParisV5.git
 cd SmartMapParisV5
 
 # Create virtual environment
