@@ -5,7 +5,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>SmartMapParis – Prix immobiliers 3D</title>
 	<link href='https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css' rel='stylesheet'>
-	<link rel="stylesheet" href="/static/css/styles.css">
+	{% load static %}
+	<link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
 
@@ -17,7 +18,7 @@
 			</div>
 			<div class="welcome-header">
 				<div class="welcome-logo-title">
-					<img src="/static/images/logo.png" alt="Logo SmartMapParis" class="welcome-logo">
+					<img src="{% static 'images/logo.png' %}" alt="Logo SmartMapParis" class="welcome-logo">
 					<h1 class="welcome-title">SmartMapParis 3D</h1>
 				</div>
 				<p class="welcome-subtitle" data-fr="Visualisation 3D des Prix Immobiliers" data-en="3D Real Estate Price Visualization">Visualisation 3D des Prix Immobiliers</p>
@@ -66,7 +67,7 @@
 	<div id="controls">
 		<div id="info-panel">
 			<div class="app-header">
-				<img src="/static/images/logo.png" alt="Logo" class="app-logo">
+				<img src="{% static 'images/logo.png' %}" alt="Logo" class="app-logo">
 				<div>
 					<h3 class="app-title">SmartMapParis 3D</h3>
 					<p class="app-subtitle">Prix Immobilier</p>
@@ -131,6 +132,6 @@
 	<script>
 		const MAPBOX_TOKEN = "{{ MAPBOX_TOKEN }}";
 	</script>
-	<script src="/static/js/app.js"></script>
+	<script src="{% static 'js/app.js' %}"></script>
 </body>
 </html> 
