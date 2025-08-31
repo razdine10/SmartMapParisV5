@@ -129,13 +129,28 @@ USER QUESTION: {question}"""
     try:
         # Create client dynamically to pick up current environment variables
         current_base_url = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
-        current_model = os.getenv('OLLAMA_MODEL', 'tinyllama:latest')
-        ollama_client = ollama.Client(host=current_base_url)
-        response = ollama_client.chat(model=current_model, messages=[
-            {'role': 'system', 'content': system_prompt},
-            {'role': 'user', 'content': question}
-        ])
-        return response['message']['content']
+        current_model = os.getenv('OLLAMA_MODEL', 'phi3:mini')
+        
+        # Use requests directly since this Ollama version uses /api/generate instead of /api/chat
+        import requests
+        
+        # Combine system prompt and user question
+        full_prompt = f"{system_prompt}\n\nUser: {question}\nAssistant:"
+        
+        response = requests.post(
+            f"{current_base_url}/api/generate",
+            json={
+                "model": current_model,
+                "prompt": full_prompt,
+                "stream": False
+            },
+            timeout=120
+        )
+        response.raise_for_status()
+        
+        result = response.json()
+        return result.get('response', 'Erreur lors de la génération de la réponse')
+        
     except Exception as e:
         current_base_url = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
         raise ConnectionError(f"Ollama not reachable at {current_base_url}: {e}")
