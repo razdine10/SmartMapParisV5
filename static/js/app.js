@@ -658,6 +658,23 @@ function initAI() {
 	});
 }
 
+function formatMarkdownToHTML(text) {
+	return text
+		// Gras **texte** -> <strong>texte</strong>
+		.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+		// Italique *texte* -> <em>texte</em>
+		.replace(/\*(.*?)\*/g, '<em>$1</em>')
+		// Titres ### -> <h3>
+		.replace(/^### (.*$)/gm, '<h3>$1</h3>')
+		.replace(/^## (.*$)/gm, '<h2>$1</h2>')
+		.replace(/^# (.*$)/gm, '<h1>$1</h1>')
+		// Listes • -> <li>
+		.replace(/^• (.*$)/gm, '<li>$1</li>')
+		.replace(/^- (.*$)/gm, '<li>$1</li>')
+		// Retours à la ligne
+		.replace(/\n/g, '<br>');
+}
+
 function addMessage(type, content, isLoading = false) {
 	const messages = document.getElementById('ai-chat-messages');
 	const div = document.createElement('div');
@@ -669,7 +686,8 @@ function addMessage(type, content, isLoading = false) {
 			? 'Analyzing data…'
 			: 'Analyse en cours…';
 	} else {
-		div.innerHTML = content.replace(/\n/g, '<br>');
+		// Formatter le markdown en HTML propre
+		div.innerHTML = formatMarkdownToHTML(content);
 	}
 	
 	messages.appendChild(div);

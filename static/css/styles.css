@@ -455,6 +455,29 @@ html, body {
 
 .ai-message.assistant strong {
 	color: #667eea;
+	font-weight: 700;
+}
+
+.ai-message.assistant h1,
+.ai-message.assistant h2,
+.ai-message.assistant h3 {
+	margin: 8px 0 4px 0;
+	color: #667eea;
+	font-weight: 700;
+}
+
+.ai-message.assistant h1 { font-size: 16px; }
+.ai-message.assistant h2 { font-size: 15px; }
+.ai-message.assistant h3 { font-size: 14px; }
+
+.ai-message.assistant li {
+	margin: 2px 0;
+	margin-left: 16px;
+}
+
+.ai-message.assistant em {
+	font-style: italic;
+	color: #5a67d8;
 }
 
 #ai-chat-input-container {
