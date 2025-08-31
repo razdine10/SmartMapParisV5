@@ -23,7 +23,7 @@ Professional interactive web application for visualizing real estate prices in P
 ### Installation
 ```bash
 # Clone the repository
-git clone [repository-url]
+git clone https://github.com/[your-username]/SmartMapParisV5.git
 cd SmartMapParisV5
 
 # Create virtual environment
@@ -192,20 +192,59 @@ curl http://localhost:8000/api/years/
 
 ## Deployment
 
-### Production Considerations
-- **Environment Variables**: Set `MAPBOX_TOKEN` in production
-- **Static Files**: Configure static file serving
-- **Database**: Consider PostgreSQL for production
-- **AI Service**: Ensure Ollama is properly configured
-
-### Environment Setup
+### Quick Deploy with Script
 ```bash
-# Set Mapbox token (optional, default provided)
-export MAPBOX_TOKEN="your_mapbox_token_here"
+# Run the automated deployment script
+./deploy.sh
+```
 
-# Production settings
-export DEBUG=False
-export ALLOWED_HOSTS="your-domain.com"
+### Manual Deployment
+```bash
+# Install production dependencies
+pip install -r requirements.txt
+
+# Setup database and data
+python manage.py migrate
+python manage.py populate_quartiers
+python manage.py import_all_france_departments
+
+# Collect static files
+python manage.py collectstatic --noinput
+```
+
+### Production Platforms
+
+#### Heroku
+```bash
+# Install Heroku CLI, then:
+heroku create your-app-name
+heroku config:set DEBUG=False
+heroku config:set ALLOWED_HOSTS=your-app-name.herokuapp.com
+git push heroku main
+```
+
+#### Railway
+```bash
+# Connect your GitHub repo to Railway
+# Set environment variables in Railway dashboard:
+# DEBUG=False
+# ALLOWED_HOSTS=your-domain.railway.app
+```
+
+#### Render
+```bash
+# Connect your GitHub repo to Render
+# Use these build/start commands:
+# Build: pip install -r requirements.txt
+# Start: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn smartmap.wsgi
+```
+
+### Environment Variables
+```bash
+# Required for production
+DEBUG=False
+ALLOWED_HOSTS=your-domain.com
+MAPBOX_TOKEN=your_mapbox_token_here  # Optional, default provided
 ```
 
 ## Future Enhancements
