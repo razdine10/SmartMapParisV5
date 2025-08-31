@@ -1,27 +1,16 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.db.models import Avg, Count, Max, Min
-from django.core.management import call_command
 from .models import Year, PriceStat, DeptPriceStat, Arrondissement, Department, Quartier, QuartierPriceStat
 
 
 @require_GET
 def list_years(request):
-    """Return only years that have data for Paris OR France. If none, auto-seed minimal data."""
+    """Return only years that have data for Paris OR France"""
     years_paris = Year.objects.filter(price_stats__isnull=False).values_list('value', flat=True).distinct()
     years_france = Year.objects.filter(dept_price_stats__isnull=False).values_list('value', flat=True).distinct()
     years_quartiers = Year.objects.filter(quartier_price_stats__isnull=False).values_list('value', flat=True).distinct()
     years_with_data = sorted(set(years_paris) | set(years_france) | set(years_quartiers))
-
-    if not years_with_data:
-        # As a safety net in production, seed France department data
-        try:
-            call_command('import_all_france_departments', verbosity=0)
-        except Exception:
-            pass
-        years_france = Year.objects.filter(dept_price_stats__isnull=False).values_list('value', flat=True).distinct()
-        years_with_data = sorted(set(years_paris) | set(years_france) | set(years_quartiers))
-
     return JsonResponse({'years': list(years_with_data)})
 
 
@@ -41,37 +30,7 @@ def price_stats(request):
     stats = PriceStat.objects.filter(year=year_obj).select_related('arrondissement')
     
     if not stats.exists():
-        # Auto-seed Paris arrondissements data if empty
-        try:
-            # Create basic Paris arrondissements and sample data
-            import random
-            for i in range(1, 21):
-                code = f"7510{i:02d}" if i < 10 else f"751{i:02d}"
-                name = f"{i}{'er' if i == 1 else 'ème'} arrondissement"
-                arr, _ = Arrondissement.objects.get_or_create(
-                    code_insee=code, 
-                    defaults={'name': name}
-                )
-                # Create sample price data for this year
-                base_price = 8000 + (i * 500)  # Basic progression by arrondissement
-                price = base_price + random.randint(-1000, 2000)
-                transactions = random.randint(100, 500)
-                
-                PriceStat.objects.get_or_create(
-                    arrondissement=arr,
-                    year=year_obj,
-                    defaults={
-                        'avg_price_m2': price,
-                        'transaction_count': transactions
-                    }
-                )
-            # Re-fetch stats after creation
-            stats = PriceStat.objects.filter(year=year_obj).select_related('arrondissement')
-        except Exception:
-            pass
-        
-        if not stats.exists():
-            return JsonResponse({'data': [], 'year': year_value})
+        return JsonResponse({'data': [], 'year': year_value})
     
     # Calculate global stats for legend
     all_prices = stats.values_list('avg_price_m2', flat=True)
@@ -113,16 +72,7 @@ def quartier_price_stats(request):
     stats = QuartierPriceStat.objects.filter(year=year_obj).select_related('quartier', 'quartier__arrondissement')
     
     if not stats.exists():
-        # Auto-seed quartiers data if empty
-        try:
-            call_command('populate_quartiers', verbosity=0)
-            # Re-fetch stats after creation
-            stats = QuartierPriceStat.objects.filter(year=year_obj).select_related('quartier', 'quartier__arrondissement')
-        except Exception:
-            pass
-        
-        if not stats.exists():
-            return JsonResponse({'data': [], 'year': year_value})
+        return JsonResponse({'data': [], 'year': year_value})
     
     # Calculate global stats for legend
     all_prices = stats.values_list('avg_price_m2', flat=True)
