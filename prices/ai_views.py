@@ -1,4 +1,5 @@
 import json
+import os
 import ollama
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -6,6 +7,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Avg, Count
 from .models import Year, PriceStat, DeptPriceStat, Arrondissement, Department
 from .predictions import generate_prediction_insights
+
+
+# Configure Ollama base URL (works locally and in production if a remote Ollama is provided)
+OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL') or os.getenv('OLLAMA_HOST') or 'http://127.0.0.1:11434'
+ollama_client = ollama.Client(host=OLLAMA_BASE_URL)
 
 
 def get_data_context():
@@ -63,22 +69,20 @@ def get_data_context():
 def analyze_question(question, data_context, language='fr'):
     """Analyze question with local AI and return insights + map actions"""
     
-    try:
-        # Add predictions to context if available
-        predictions_context = ""
-        prediction_keywords = ['2025', 'prédiction', 'prédire', 'futur', 'prévoir'] if language == 'fr' else ['2025', 'prediction', 'predict', 'future', 'forecast']
-        if any(word in question.lower() for word in prediction_keywords):
-            try:
-                predictions = generate_prediction_insights()
-                pred_title = "PRÉDICTIONS 2025 (méthode débutant - tendance linéaire)" if language == 'fr' else "2025 PREDICTIONS (beginner method - linear trend)"
-                predictions_context = f"\n\n{pred_title}:\n{json.dumps(predictions, indent=2, ensure_ascii=False)}"
-            except:
-                error_msg = "\n\nPrédictions 2025 non disponibles." if language == 'fr' else "\n\n2025 predictions not available."
-                predictions_context = error_msg
+    # Add predictions to context if available
+    predictions_context = ""
+    prediction_keywords = ['2025', 'prédiction', 'prédire', 'futur', 'prévoir'] if language == 'fr' else ['2025', 'prediction', 'predict', 'future', 'forecast']
+    if any(word in question.lower() for word in prediction_keywords):
+        try:
+            predictions = generate_prediction_insights()
+            pred_title = "PRÉDICTIONS 2025 (méthode débutant - tendance linéaire)" if language == 'fr' else "2025 PREDICTIONS (beginner method - linear trend)"
+            predictions_context = f"\n\n{pred_title}:\n{json.dumps(predictions, indent=2, ensure_ascii=False)}"
+        except Exception:
+            predictions_context = ""
 
-        # AI prompt based on language
-        if language == 'fr':
-            system_prompt = f"""Tu es un expert en analyse immobilière française. 
+    # AI prompt based on language
+    if language == 'fr':
+        system_prompt = f"""Tu es un expert en analyse immobilière française. 
 Tu as accès aux données DVF (Demandes de Valeurs Foncières) de 2020 à 2024 pour Paris et toute la France.
 
 DONNÉES DISPONIBLES:
@@ -97,8 +101,8 @@ INSTRUCTIONS:
 4. Si on te demande des prédictions 2025, utilise les prédictions fournies et explique que c'est une méthode simple (tendance linéaire)
 
 QUESTION DE L'UTILISATEUR: {question}"""
-        else:
-            system_prompt = f"""You are a French real estate analysis expert.
+    else:
+        system_prompt = f"""You are a French real estate analysis expert.
 You have access to DVF (Property Value Requests) data from 2020 to 2024 for Paris and all of France.
 
 AVAILABLE DATA:
@@ -118,21 +122,15 @@ INSTRUCTIONS:
 
 USER QUESTION: {question}"""
 
-        # Call to Ollama (free local model)
-        try:
-            response = ollama.chat(model='llama3.2', messages=[
-                {'role': 'system', 'content': system_prompt},
-                {'role': 'user', 'content': question}
-            ])
-            return response['message']['content']
-        except Exception as e:
-            # Fallback if Ollama is not available
-            fallback_msg = f"⚠️ Assistant IA temporairement indisponible. Erreur: {str(e)}\n\nPour une analyse plus détaillée, installez Ollama." if language == 'fr' else f"⚠️ AI assistant temporarily unavailable. Error: {str(e)}\n\nFor detailed analysis, please install Ollama."
-            return fallback_msg
-            
+    # Call to Ollama (local or remote). If unreachable, raise explicit error.
+    try:
+        response = ollama_client.chat(model='llama3.2', messages=[
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': question}
+        ])
+        return response['message']['content']
     except Exception as e:
-        error_msg = f"Erreur d'analyse: {str(e)}" if language == 'fr' else f"Analysis error: {str(e)}"
-        return error_msg
+        raise ConnectionError(f"Ollama not reachable at {OLLAMA_BASE_URL}: {e}")
 
 
 @csrf_exempt
@@ -147,11 +145,12 @@ def ai_chat(request):
         if not question:
             return JsonResponse({'error': 'question required'}, status=400)
         
-        # Get data context
         data_context = get_data_context()
         
-        # Analyze with AI
-        ai_response = analyze_question(question, data_context, language)
+        try:
+            ai_response = analyze_question(question, data_context, language)
+        except ConnectionError as ce:
+            return JsonResponse({'error': 'ollama_unavailable', 'details': str(ce)}, status=503)
         
         # Check if predictions are requested
         predictions = None
@@ -159,16 +158,13 @@ def ai_chat(request):
             try:
                 preds = generate_prediction_insights()
                 if preds and 'insights' in preds:
-                    # Add summary to AI response
                     summary_lines = []
-                    for insight in preds['insights'][:3]:  # First 3 insights
+                    for insight in preds['insights'][:3]:
                         summary_lines.append(f"• {insight}")
-                    
                     ai_response = ai_response + "\n\n" + ("Résumé prédictions 2025:\n" if language=='fr' else "2025 predictions summary:\n") + "\n".join(summary_lines)
-                    predictions = None  # Don't return object to avoid detailed frontend display
                 else:
                     predictions = preds
-            except:
+            except Exception:
                 pass
         
         return JsonResponse({
