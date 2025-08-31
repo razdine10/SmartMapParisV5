@@ -1,16 +1,27 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.db.models import Avg, Count, Max, Min
+from django.core.management import call_command
 from .models import Year, PriceStat, DeptPriceStat, Arrondissement, Department, Quartier, QuartierPriceStat
 
 
 @require_GET
 def list_years(request):
-    """Return only years that have data for Paris OR France"""
+    """Return only years that have data for Paris OR France. If none, auto-seed minimal data."""
     years_paris = Year.objects.filter(price_stats__isnull=False).values_list('value', flat=True).distinct()
     years_france = Year.objects.filter(dept_price_stats__isnull=False).values_list('value', flat=True).distinct()
     years_quartiers = Year.objects.filter(quartier_price_stats__isnull=False).values_list('value', flat=True).distinct()
     years_with_data = sorted(set(years_paris) | set(years_france) | set(years_quartiers))
+
+    if not years_with_data:
+        # As a safety net in production, seed France department data
+        try:
+            call_command('import_all_france_departments', verbosity=0)
+        except Exception:
+            pass
+        years_france = Year.objects.filter(dept_price_stats__isnull=False).values_list('value', flat=True).distinct()
+        years_with_data = sorted(set(years_paris) | set(years_france) | set(years_quartiers))
+
     return JsonResponse({'years': list(years_with_data)})
 
 
