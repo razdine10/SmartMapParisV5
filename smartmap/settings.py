@@ -5,7 +5,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-change-me'
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app,.up.railway.app').split(',')
+# Configure allowed hosts (local dev and production)
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.railway.app',
+    '.up.railway.app',
+    '.onrender.com'  # Allow Render domains
+]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
